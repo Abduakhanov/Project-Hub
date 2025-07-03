@@ -1,9 +1,21 @@
 import React from 'react';
-import { mockUsers } from '../../data/mockData';
+import { useApp } from '../../context/AppContext';
 import { User } from '../../types';
-import { Mail, Phone, Calendar, Award, BarChart3 } from 'lucide-react';
+import { Mail, Phone, Calendar, Award, BarChart3, Users } from 'lucide-react';
 
 const Team: React.FC = () => {
+  const { users } = useApp();
+
+  if (!users.length) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <Users size={48} className="mx-auto text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Пока нет участников</h3>
+        <p className="text-gray-600">Добавьте участников команды для управления проектами</p>
+      </div>
+    );
+  }
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-800';
@@ -43,7 +55,7 @@ const Team: React.FC = () => {
 
       {/* Team Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {mockUsers.map(user => {
+        {users.map(user => {
           const performance = getPerformanceData(user.id);
           
           return (
@@ -113,7 +125,7 @@ const Team: React.FC = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600 mb-2">4</div>
+            <div className="text-3xl font-bold text-blue-600 mb-2">{users.length}</div>
             <div className="text-sm text-gray-600">Участников</div>
           </div>
           <div className="text-center">
@@ -136,47 +148,25 @@ const Team: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Последняя активность</h3>
         
         <div className="space-y-4">
-          <div className="flex items-center space-x-3 pb-3 border-b border-gray-100">
-            <img
-              src={mockUsers[0].avatar}
-              alt={mockUsers[0].name}
-              className="w-8 h-8 rounded-full"
-            />
-            <div className="flex-1">
-              <p className="text-sm text-gray-900">
-                <span className="font-medium">{mockUsers[0].name}</span> завершил задачу "Анализ требований"
-              </p>
-              <p className="text-xs text-gray-500">2 часа назад</p>
+          {users.slice(0, 3).map((user, index) => (
+            <div key={user.id} className="flex items-center space-x-3 pb-3 border-b border-gray-100 last:border-b-0">
+              <img
+                src={user.avatar}
+                alt={user.name}
+                className="w-8 h-8 rounded-full"
+              />
+              <div className="flex-1">
+                <p className="text-sm text-gray-900">
+                  <span className="font-medium">{user.name}</span> {
+                    index === 0 ? 'завершил задачу "Анализ требований"' :
+                    index === 1 ? 'создала новый проект' :
+                    'обновил статус задачи'
+                  }
+                </p>
+                <p className="text-xs text-gray-500">{2 + index * 2} часа назад</p>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-3 pb-3 border-b border-gray-100">
-            <img
-              src={mockUsers[1].avatar}
-              alt={mockUsers[1].name}
-              className="w-8 h-8 rounded-full"
-            />
-            <div className="flex-1">
-              <p className="text-sm text-gray-900">
-                <span className="font-medium">{mockUsers[1].name}</span> создала новый проект
-              </p>
-              <p className="text-xs text-gray-500">4 часа назад</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <img
-              src={mockUsers[2].avatar}
-              alt={mockUsers[2].name}
-              className="w-8 h-8 rounded-full"
-            />
-            <div className="flex-1">
-              <p className="text-sm text-gray-900">
-                <span className="font-medium">{mockUsers[2].name}</span> обновил статус задачи
-              </p>
-              <p className="text-xs text-gray-500">6 часов назад</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

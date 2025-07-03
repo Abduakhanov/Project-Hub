@@ -1,12 +1,22 @@
 import React from 'react';
-import { mockProjects } from '../../data/mockData';
+import { useApp } from '../../context/AppContext';
 import { Project } from '../../types';
 import { Calendar, Users, BarChart3 } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 const GanttChart: React.FC = () => {
-  const projects = mockProjects;
+  const { projects } = useApp();
+  
+  if (!projects.length) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <Calendar size={48} className="mx-auto text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Нет проектов</h3>
+        <p className="text-gray-600">Создайте первый проект для отображения диаграммы Ганта</p>
+      </div>
+    );
+  }
   
   // Calculate date range for the chart
   const allDates = projects.flatMap(p => [parseISO(p.startDate), parseISO(p.endDate)]);
