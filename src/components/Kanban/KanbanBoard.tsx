@@ -1,54 +1,39 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { mockKanbanColumns, mockTasks } from '../../data/mockData';
-import { KanbanColumn, Task } from '../../types';
+import { useApp } from '../../context/AppContext';
+import { TaskStatus } from '../../types';
 import KanbanCard from './KanbanCard';
 import { Plus } from 'lucide-react';
 
 const KanbanBoard: React.FC = () => {
-  const [columns, setColumns] = useState<KanbanColumn[]>(mockKanbanColumns);
+  const { tasks, updateTask } = useApp();
+
+  const columns = useMemo(() => {
+    const columnConfig = [
+      { id: TaskStatus.Backlog, title: 'Backlog', color: '#6B7280' },
+      { id: TaskStatus.InProgress, title: 'В работе', color: '#3B82F6' },
+      { id: TaskStatus.Review, title: 'На проверке', color: '#F59E0B' },
+      { id: TaskStatus.Done, title: 'Готово', color: '#10B981' }
+    ];
+
+    return columnConfig.map(col => ({
+      ...col,
+      tasks: tasks.filter(task => task.status === col.id)
+    }));
+  }, [tasks]);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const { source, destination } = result;
+    const { source, destination, draggableId } = result;
     
     if (source.droppableId === destination.droppableId) {
-      // Reordering within the same column
-      const column = columns.find(col => col.id === source.droppableId);
-      if (!column) return;
-
-      const newTasks = Array.from(column.tasks);
-      const [removed] = newTasks.splice(source.index, 1);
-      newTasks.splice(destination.index, 0, removed);
-
-      setColumns(columns.map(col => 
-        col.id === source.droppableId 
-          ? { ...col, tasks: newTasks }
-          : col
-      ));
+      // Reordering within the same column - no action needed for now
+      return;
     } else {
       // Moving between columns
-      const sourceColumn = columns.find(col => col.id === source.droppableId);
-      const destColumn = columns.find(col => col.id === destination.droppableId);
-      
-      if (!sourceColumn || !destColumn) return;
-
-      const sourceTasks = Array.from(sourceColumn.tasks);
-      const destTasks = Array.from(destColumn.tasks);
-      
-      const [removed] = sourceTasks.splice(source.index, 1);
-      removed.status = destination.droppableId as Task['status'];
-      destTasks.splice(destination.index, 0, removed);
-
-      setColumns(columns.map(col => {
-        if (col.id === source.droppableId) {
-          return { ...col, tasks: sourceTasks };
-        } else if (col.id === destination.droppableId) {
-          return { ...col, tasks: destTasks };
-        }
-        return col;
-      }));
+      const newStatus = destination.droppableId as TaskStatus;
+      updateTask(draggableId, { status: newStatus });
     }
   };
 
@@ -81,7 +66,7 @@ const KanbanBoard: React.FC = () => {
                       {...provided.droppableProps}
                       ref={provided.innerRef}
                       className={`space-y-3 min-h-[200px] ${
-                        snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg' : ''
+                        snapshot.isDraggingOver ? 'bg-blue-50 rounded-lg p-2' : ''
                       }`}
                     >
                       {column.tasks.map((task, index) => (

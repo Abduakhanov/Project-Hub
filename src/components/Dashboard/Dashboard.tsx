@@ -1,5 +1,5 @@
-import React from 'react';
-import { mockDashboardMetrics, mockProjects, mockTasks } from '../../data/mockData';
+import React, { useMemo } from 'react';
+import { useApp } from '../../context/AppContext';
 import MetricsCard from './MetricsCard';
 import ProjectCard from './ProjectCard';
 import TaskList from './TaskList';
@@ -11,16 +11,56 @@ import {
   Users, 
   Clock 
 } from 'lucide-react';
+import { ProjectStatus, TaskStatus } from '../../types';
 
 const Dashboard: React.FC = () => {
-  const overdueTasks = mockTasks.filter(task => {
-    if (!task.dueDate) return false;
-    return new Date(task.dueDate) < new Date() && task.status !== 'done';
-  });
+  const { projects, tasks, timeEntries } = useApp();
 
-  const recentTasks = mockTasks
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
+  const metrics = useMemo(() => {
+    const activeProjects = projects.filter(p => p.status === ProjectStatus.Active);
+    const overdueTasks = tasks.filter(task => {
+      if (!task.dueDate) return false;
+      return new Date(task.dueDate) < new Date() && task.status !== TaskStatus.Done;
+    });
+    
+    const completedThisWeek = tasks.filter(task => {
+      if (task.status !== TaskStatus.Done) return false;
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return new Date(task.updatedAt) >= weekAgo;
+    });
+
+    const totalTimeLogged = timeEntries.reduce((sum, entry) => sum + entry.hours, 0);
+    const uniqueDays = new Set(timeEntries.map(e => e.date)).size;
+    const averageCycleTime = uniqueDays > 0 ? totalTimeLogged / uniqueDays : 0;
+
+    return {
+      totalProjects: projects.length,
+      activeProjects: activeProjects.length,
+      overdueTasks: overdueTasks.length,
+      completedThisWeek: completedThisWeek.length,
+      teamUtilization: 85, // Mock value
+      averageCycleTime: averageCycleTime,
+      totalTimeLogged
+    };
+  }, [projects, tasks, timeEntries]);
+
+  const recentTasks = useMemo(() => {
+    return tasks
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 5);
+  }, [tasks]);
+
+  const activeProjects = useMemo(() => {
+    return projects.filter(p => p.status === ProjectStatus.Active);
+  }, [projects]);
+
+  const overdueTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (!task.dueDate) return false;
+      return new Date(task.dueDate) < new Date() && task.status !== TaskStatus.Done;
+    });
+  }, [tasks]);
 
   return (
     <div className="space-y-6">
@@ -28,13 +68,13 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <MetricsCard
           title="Всего проектов"
-          value={mockDashboardMetrics.totalProjects}
+          value={metrics.totalProjects}
           icon={FolderOpen}
           color="bg-blue-500"
         />
         <MetricsCard
           title="Активных проектов"
-          value={mockDashboardMetrics.activeProjects}
+          value={metrics.activeProjects}
           change="+12%"
           changeType="positive"
           icon={Play}
@@ -42,7 +82,7 @@ const Dashboard: React.FC = () => {
         />
         <MetricsCard
           title="Просроченных задач"
-          value={overdueTasks.length}
+          value={metrics.overdueTasks}
           change="-8%"
           changeType="positive"
           icon={AlertTriangle}
@@ -50,7 +90,7 @@ const Dashboard: React.FC = () => {
         />
         <MetricsCard
           title="Выполнено за неделю"
-          value={mockDashboardMetrics.completedThisWeek}
+          value={metrics.completedThisWeek}
           change="+23%"
           changeType="positive"
           icon={CheckCircle}
@@ -58,7 +98,7 @@ const Dashboard: React.FC = () => {
         />
         <MetricsCard
           title="Загрузка команды"
-          value={`${mockDashboardMetrics.teamUtilization}%`}
+          value={`${metrics.teamUtilization}%`}
           change="+5%"
           changeType="positive"
           icon={Users}
@@ -66,8 +106,8 @@ const Dashboard: React.FC = () => {
         />
         <MetricsCard
           title="Среднее время цикла"
-          value={`${mockDashboardMetrics.averageCycleTime}д`}
-          change="-0.8д"
+          value={`${metrics.averageCycleTime.toFixed(1)}ч`}
+          change="-0.8ч"
           changeType="positive"
           icon={Clock}
           color="bg-orange-500"
@@ -84,9 +124,16 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
           <div className="space-y-4">
-            {mockProjects.filter(p => p.status === 'active').map(project => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
+            {activeProjects.length === 0 ? (
+              <div className="text-center py-8">
+                <FolderOpen size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600">Нет активных проектов</p>
+              </div>
+            ) : (
+              activeProjects.map(project => (
+                <ProjectCard key={project.id} project={project} />
+              ))
+            )}
           </div>
         </div>
 

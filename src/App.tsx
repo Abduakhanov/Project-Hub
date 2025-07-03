@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AppProvider } from './context/AppContext';
 import Sidebar from './components/Layout/Sidebar';
 import Header from './components/Layout/Header';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -6,8 +7,9 @@ import KanbanBoard from './components/Kanban/KanbanBoard';
 import GanttChart from './components/Gantt/GanttChart';
 import Analytics from './components/Analytics/Analytics';
 import Team from './components/Team/Team';
+import TimeTracking from './components/TimeTracking/TimeTracking';
 
-function App() {
+function AppContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -16,6 +18,7 @@ function App() {
       case 'dashboard': return 'Dashboard';
       case 'kanban': return 'Kanban Board';
       case 'gantt': return 'Gantt Chart';
+      case 'time': return 'Учет времени';
       case 'analytics': return 'Analytics';
       case 'team': return 'Team';
       case 'settings': return 'Settings';
@@ -31,6 +34,8 @@ function App() {
         return <KanbanBoard />;
       case 'gantt':
         return <GanttChart />;
+      case 'time':
+        return <TimeTracking />;
       case 'analytics':
         return <Analytics />;
       case 'team':
@@ -59,10 +64,9 @@ function App() {
       <div className="flex-1 flex flex-col">
         <Header 
           title={getPageTitle()}
-          onAddClick={() => console.log('Add clicked')}
-          onExportClick={() => console.log('Export clicked')}
           showSearch={activeTab !== 'settings'}
           showFilter={activeTab !== 'settings'}
+          activeTab={activeTab}
         />
         
         <main className="flex-1 p-6 overflow-auto">
@@ -70,6 +74,14 @@ function App() {
         </main>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
   );
 }
 
